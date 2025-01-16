@@ -1,18 +1,17 @@
 clear; clc; close all;
 
 % Define fixed figure size
-figureWidth = 800;  % Width in pixels
-figureHeight = 600; % Height in pixels
-figure('Position', [100, 100, figureWidth, figureHeight]);
+figWidth = 800;  % Width in pixels
+figHeight = 600; % Height in pixels
+figure('Position', [100, 100, figWidth, figHeight]);
 
 % Display an image or blank screen
-imagesc(zeros(figureHeight, figureWidth)); colormap white; axis image;
+imagesc(zeros(figHeight, figWidth)); colormap white; axis image;
 
 % Fix the axes limits and keep them constant
 axis on;
-axis([0 figureWidth 0 figureHeight]);
+axis([0 figWidth 0 figHeight]);
 set(gca, 'YDir', 'reverse');
-title('Click on the screen to see the animated circle follow the clicks.');
 
 circleRadius = 20;
 theta = linspace(0, 2*pi, 50);
@@ -21,15 +20,13 @@ yCircle = circleRadius * sin(theta);
 animatedCircle = patch(xCircle, yCircle, 'r', 'FaceAlpha', 0.5, 'EdgeColor', 'none');
 
 % Start at the center of the screen
-last_point = [figureWidth / 2, figureHeight / 2]; 
+last_pt = [figWidth, figHeight] / 2; 
 
 % Store variables in the figure's appdata
-setappdata(gcf, 'animatedCircle', animatedCircle); % Store the patch object
-setappdata(gcf, 'xCircle', xCircle); % Store circle X-coordinates
-setappdata(gcf, 'yCircle', yCircle); % Store circle Y-coordinates
-setappdata(gcf, 'last_point', last_point); % Store the last point
-setappdata(gcf, 'isAnimating', false); % Animation status flag
-set(animatedCircle, 'XData', last_point(1) + xCircle, 'YData', last_point(2) + yCircle)
+setData('animatedCircle', animatedCircle);
+setData('xCircle', xCircle); setData('yCircle', yCircle);
+setData('last_point', last_pt); setData('isAnimating', false);
+set(animatedCircle, 'XData', last_pt(1) + xCircle, 'YData', last_pt(2) + yCircle)
 
 % Callback function for mouse clicks
 set(gcf, 'WindowButtonDownFcn', @getClick);
@@ -47,8 +44,7 @@ function getClick(~, ~)
     
     % Retrieve stored variables from appdata
     animatedCircle = getData('animatedCircle');
-    xCircle = getData('xCircle');
-    yCircle = getData('yCircle');
+    xCircle = getData('xCircle'); yCircle = getData('yCircle');
     last_point = getData('last_point');
     
     % Block the callback and start animation
