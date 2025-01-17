@@ -59,18 +59,11 @@ classdef Planar2DOFRobot
             xC = r * cos(theta) + r; % X-coordinates of the "C" before rotation
             yC = r * sin(theta); % Y-coordinates of the "C" before rotation
 
-            % Rotate the "C" along the end-effector angle
-            rotationMatrix = [cos(theta1 + theta2), -sin(theta1 + theta2); 
-                              sin(theta1 + theta2),  cos(theta1 + theta2)];
-            rotatedCoords = rotationMatrix * [xC; yC];
+            rotationMatrix = rz(theta1 + theta2);  % Use rotation matrix from Featherstone library
+            rotatedCoords = rotationMatrix(1:2,1:2)' * [xC; yC];
             xC = rotatedCoords(1, :) + x2;
             yC = rotatedCoords(2, :) + y2;
             plot(xC, yC, 'k-', 'LineWidth', 2);
-
-            % Annotate the plot
-            xlabel('X-axis');
-            ylabel('Y-axis');
-            title('Planar 2-DOF Robot with a "C" on the End-Effector');
         end
     end
 end
