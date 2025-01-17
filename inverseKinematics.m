@@ -1,27 +1,27 @@
-clear; clc; close all;
-
-robot = Planar2DOFRobot(2, 1.5);
-
-% Target position for the end-effector
-xTarget = 2.5;
-yTarget = 1.0;
-
-% Compute joint angles using inverse kinematics
-[q1, q2] = inverseKinematics(xTarget, yTarget, robot.L1, robot.L2);
-
-% Visualize the robot
-figHandle = figure;
-robot.plotRobot(q1, q2, figHandle);
-
 function [q1, q2] = inverseKinematics(x, y, L1, L2)
     % Compute inverse kinematics for a 2-DOF planar robot
     r = sqrt(x^2 + y^2);
-    if r > (L1 + L2) || r < abs(L1 - L2)
-        error('Target point is outside the reachable workspace.');
+    outerRadius = L1 + L2;
+    innerRadius = abs(L1 - L2);
+
+    if r > outerRadius
+        fprintf('Warning: Target point is outside the reachable workspace.');
+        x = x * outerRadius / r;
+        y = y * outerRadius / r;
+    elseif r < innerRadius
+        fprintf('Warning: Target point is outside the reachable workspace.');
+        x = x * innerRadius / r;
+        y = y * innerRadius / r;
     end
 
     % Angle for the second joint
     cosTheta2 = (x^2 + y^2 - L1^2 - L2^2) / (2 * L1 * L2);
+    if cosTheta2 > 1
+        cosTheta2 = 1;
+    elseif cosTheta2 < -1
+        cosTheta2 = -1;
+    end
+
     sinTheta2 = sqrt(1 - cosTheta2^2); % Assume positive elbow up solution
     theta2 = atan2(sinTheta2, cosTheta2);
 
