@@ -9,15 +9,12 @@ figHandle = figure;
 robot.plotRobot(0, 0, figHandle, true);
 
 % Set up interactive screen
-img = imread('aerotech_bkg.jpg');
-image('CData', img, 'XData', [0 screenW], 'YData', [0 screenH]);
+image('CData', imread('aerotech_bkg.jpg'), 'XData', [0 screenW], 'YData', [0 screenH]);
 hold on;
 axis([0 screenW 0 screenH]);
 set(gca, 'YDir', 'reverse');
 title('Click to Move the Robot End-Effector');
 set(gca, 'XTick', [], 'YTick', []);
-
-% Callback function for mouse clicks
 set(figHandle, 'WindowButtonDownFcn', @(~, ~) onMouseClick(robot, figHandle));
 
 function onMouseClick(robot, figHandle)
@@ -28,10 +25,10 @@ function onMouseClick(robot, figHandle)
 
     [q1, q2] = inverseKinematics(x, y, robot.L1, robot.L2);
     
-    time = 0:0.001:2;
+    time = 0:0.001:6;
     setpoint = ones(length(time),2) .* [q1 q2];
     [state_history, ~] = planarPID(time, setpoint, [0 0 0 0 0 0], [60 30 40]);
-    for i = 1:50:length(time)
+    for i = 1:80:length(time)
         cla;
         image('CData', imread('aerotech_bkg.jpg'), 'XData', [0 800], 'YData', [0 600]);
         robot.plotRobot(state_history(i,1), state_history(i,2), figHandle, true);
