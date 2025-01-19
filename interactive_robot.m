@@ -10,6 +10,8 @@ set(gca, 'YDir', 'reverse');
 title('Click to Move the Robot End-Effector');
 set(gca, 'XTick', [], 'YTick', []);
 robot.plotRobot(0, 0, figHandle, true);
+
+% Set up mouse click event
 set(figHandle, 'WindowButtonDownFcn', @(~, ~) onMouseClick(robot, figHandle));
 
 function onMouseClick(robot, figHandle)
@@ -23,9 +25,11 @@ function onMouseClick(robot, figHandle)
     PID = [200 30 40];
 
     response = robot.ramp([q1, q2], ramp_time, sampling_time, PID);
-    for j = 1:50:length(response)
+    for j = 1:40:length(response)
         cla;
         robot.plotRobot(response(j,1), response(j,2), figHandle, true);
+        robot.getEndEffectorState(response(j,:));
         pause(0.001);
     end
+    robot.getEndEffectorState(response(end,:));
 end

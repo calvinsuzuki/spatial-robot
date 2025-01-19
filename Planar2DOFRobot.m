@@ -68,13 +68,25 @@ classdef Planar2DOFRobot < handle
             plot(xC, yC, 'k-', 'LineWidth', 2);
         end
 
-        function response = ramp(obj, newPosition, time_span, sampling_time, PID)
-            time = 0:sampling_time:time_span;
+        function response = ramp(obj, newPosition, velocity, sampling_time, PID)
+            distance = norm(newPosition - obj.Position);
+            ramp_time = distance / velocity;
+            time = 0:sampling_time:ramp_time;
             steps = length(time);
             xRamp = linspace(obj.Position(1), newPosition(1), steps);
             yRamp = linspace(obj.Position(2), newPosition(2), steps);
             setpoint = [xRamp', yRamp'];
-            [state_history, ~] = planarPID(time, setpoint, [obj.Position(1) obj.Position(2) 0 0 0 0], PID);
+
+            % Add 1 second of zero setpoint at the end
+            steady_time = ramp_time:sampling_time:ramp_time+2;
+            steady_steps = length(steady_time);
+            xSteady = repmat(newPosition(1), steady_steps, 1);
+            ySteady = repmat(newPosition(2), steady_steps, 1);
+            setpoint = [setpoint; [xSteady, ySteady]];
+            time = [time, steady_time];
+            
+            initial_state = [obj.Position(1) obj.Position(2) 0 0 0 0]; % Assume zero velocity and torque
+            [state_history, ~] = planarPID(time, setpoint, initial_state, PID);
 
             response = state_history;
         end
@@ -96,11 +108,11 @@ classdef Planar2DOFRobot < handle
             innerRadius = abs(obj.L1 - obj.L2);
         
             if r > outerRadius
-                fprintf('Warning: Target point is outside the reachable workspace.');
+                fprintf('Warning: Target point is outside the reachable workspace.\n');
                 x = x * outerRadius / r;
                 y = y * outerRadius / r;
             elseif r < innerRadius
-                fprintf('Warning: Target point is outside the reachable workspace.');
+                fprintf('Warning: Target point is outside the reachable workspace.\n');
                 x = x * innerRadius / r;
                 y = y * innerRadius / r;
             end
@@ -126,10 +138,23 @@ classdef Planar2DOFRobot < handle
         end
 
         function getEndEffectorState(obj, robot_state)
-            % Get the end-effector state from the robot state
-            x0 = obj.xBase; y0 = obj.yBase; % Base of the robot
-            q1 = robot_state(1); q2 = robot_state(2);
-            x1 = x0
+                q = robot_state(1:2);
+                dq = robot_state(3:4);
+                % ddq = robot_state(5:6);
+                J = obj.getJacobian(q);
+                vel_vec = J * dq';
+                fprintf('Joints velocity: %.2f, %.2f\n', dq(1), dq(2));
+                fprintf('End-effector velocity: %.2f, %.2f\n', vel_vec(1), vel_vec(2));
+        end
+
+        function J = getJacobian(obj, q)
+            % Compute the Jacobian matrix for a 2-DOF planar robot
+            q1 = q(1); q2 = q(2);
+            J11 = -obj.L1 * sin(q1) - obj.L2 * sin(q1 + q2);
+            J12 = -obj.L2 * sin(q1 + q2);
+            J21 = obj.L1 * cos(q1) + obj.L2 * cos(q1 + q2);
+            J22 = obj.L2 * cos(q1 + q2);
+            J = [J11, J12; J21, J22];
         end
     end
 end
