@@ -69,16 +69,27 @@ classdef Planar2DOFRobot < handle
         end
 
         function response = ramp(obj, newPosition, velocity, sampling_time, PID)
+            % Optimal trajectory planning
+            for i = 1:2
+                if obj.Position(i) - newPosition(i) > pi
+                    newPosition(i) = newPosition(i) + 2 * pi;
+                elseif obj.Position(i) - newPosition(i) < -pi
+                    newPosition(i) = newPosition(i) - 2 * pi;
+                end
+            end
+
+            % Define ramp time
             distance = norm(newPosition - obj.Position);
             ramp_time = distance / velocity;
             time = 0:sampling_time:ramp_time;
-            steps = length(time);
+            steps = length(time);            
+
             xRamp = linspace(obj.Position(1), newPosition(1), steps);
             yRamp = linspace(obj.Position(2), newPosition(2), steps);
             setpoint = [xRamp', yRamp'];
 
             % Add 1 second of zero setpoint at the end
-            steady_time = ramp_time:sampling_time:ramp_time+2;
+            steady_time = ramp_time:sampling_time:ramp_time+1;
             steady_steps = length(steady_time);
             xSteady = repmat(newPosition(1), steady_steps, 1);
             ySteady = repmat(newPosition(2), steady_steps, 1);
@@ -91,11 +102,15 @@ classdef Planar2DOFRobot < handle
             response = state_history;
         end
         
-        function ramp = generateRamp(obj, newPosition, steps)
-            xRamp = linspace(obj.Position(1), newPosition(1), steps);
-            yRamp = linspace(obj.Position(2), newPosition(2), steps);
-            ramp = [xRamp', yRamp'];
-        end
+        % function transition = sigmoid_transition(obj, start, final, duration)
+        %     % Sigmoid transition between two points
+        %     % start: initial point
+        %     % final: final point
+        %     % duration: duration of the transition
+        %     t = linspace(0, 1, duration);
+        %     transition = (final - start) * (1 - cos(pi * t)) / 2 + start;
+        % end
+
 
         function [q1, q2] = ikine(obj, x, y)
             % Move x y to base frame
@@ -137,14 +152,13 @@ classdef Planar2DOFRobot < handle
             q2 = theta2;
         end
 
-        function getEndEffectorState(obj, robot_state)
+        function [vx, vy] = getEndEffectorState(obj, robot_state)
                 q = robot_state(1:2);
                 dq = robot_state(3:4);
                 % ddq = robot_state(5:6);
                 J = obj.getJacobian(q);
-                vel_vec = J * dq';
-                fprintf('Joints velocity: %.2f, %.2f\n', dq(1), dq(2));
-                fprintf('End-effector velocity: %.2f, %.2f\n', vel_vec(1), vel_vec(2));
+                vel_vec = J * dq' ./ 1000; % Convert to m/s
+                vx = vel_vec(1); vy = vel_vec(2);
         end
 
         function J = getJacobian(obj, q)
